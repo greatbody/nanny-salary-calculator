@@ -22,6 +22,7 @@
     }
     h1 {
       text-align: center;
+      margin: 0;
     }
     label {
       display: block;
@@ -132,16 +133,12 @@
     <h1>阿姨工资计算器</h1>
     
     <div class="scenario-group">
-      <label>请选择计算情形：</label>
-      <label>
-        <input type="radio" name="scenario" value="normal" checked> 普通工作月份
-      </label>
-      <label>
-        <input type="radio" name="scenario" value="february"> 二月首月（首年）
-      </label>
-      <label>
-        <input type="radio" name="scenario" value="special"> 特殊放假月份（春季/暑期）
-      </label>
+      <label for="scenarioSelect">请选择计算情形：</label>
+      <select id="scenarioSelect" name="scenario" onchange="updateScenarioInputs()">
+        <option value="normal">普通工作月份</option>
+        <option value="february">二月首月（首年）</option>
+        <option value="special">特殊放假月份（春季/暑期）</option>
+      </select>
     </div>
     
     <!-- 普通工作月份输入 -->
@@ -208,11 +205,15 @@
 
     // 根据选择的情形显示对应的输入区域
     function updateScenarioInputs() {
-      let scenario = document.querySelector('input[name="scenario"]:checked').value;
+      let scenario = document.getElementById('scenarioSelect').value;
       normalInputs.style.display = (scenario === "normal") ? "block" : "none";
       februaryInputs.style.display = (scenario === "february") ? "block" : "none";
       specialInputs.style.display = (scenario === "special") ? "block" : "none";
       resultDiv.textContent = "";
+      if (scenario === 'normal') {
+        generateCalendar();
+        updateWorkDays();
+      }
     }
 
     scenarioRadios.forEach(radio => {
@@ -233,7 +234,7 @@
     const regularDailyWage = 195; // 超过 5 天额外休假时，每个实际工作日结算工资单价。
     
     function calculateWage() {
-      let scenario = document.querySelector('input[name="scenario"]:checked').value;
+      let scenario = document.getElementById('scenarioSelect').value;
       let wage = 0;
       let details = '';
       
