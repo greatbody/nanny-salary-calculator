@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>2025 年年历（含农历和节假日）</title>
+  <style>
+    body {
+      font-family: "微软雅黑", sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    .month {
+      margin: 20px auto;
+      background: #fff;
+      width: 90%;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      padding: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      text-align: center;
+      vertical-align: top;
+      padding: 5px;
+      height: 80px;
+      position: relative;
+    }
+    th {
+      background: #eee;
+    }
+    .date-number {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .lunar {
+      font-size: 0.8em;
+      color: #666;
+    }
+    .holiday {
+      background: #ffe0e0;
+    }
+    .holiday::after {
+      content: attr(data-holiday);
+      display: block;
+      font-size: 0.75em;
+      color: #d00;
+      margin-top: 4px;
+    }
+    .workday {
+      background: #e0f7ff;
+    }
+  </style>
+</head>
+<body>
+  <h1>2025 年年历</h1>
+  <div id="calendar"></div>
+
+  <!-- 使用 ES module 引入 solarlunar-es 第三方库 -->
+  <script type="module">
+    import solarLunar from 'https://unpkg.com/solarlunar-es?module';
+
+    // 定义法定假日数据，根据国务院公布的通知【&#8203;:contentReference[oaicite:1]{index=1}】【&#8203;:contentReference[oaicite:2]{index=2}】
+    const holidays = {
+      "2025-01-01": "元旦",
+      "2025-01-26": "调休上班",
+      "2025-01-28": "春节假期",
+      "2025-01-29": "春节假期",
+      "2025-01-30": "春节假期",
+      "2025-01-31": "春节假期",
+      "2025-02-01": "春节假期",
+      "2025-02-02": "春节假期",
+      "2025-02-03": "春节假期",
+      "2025-02-04": "春节假期",
+      "2025-02-08": "调休上班",
+      "2025-04-04": "清明假期",
+      "2025-04-05": "清明假期",
+      "2025-04-06": "清明假期",
+      "2025-04-27": "调休上班",
+      "2025-05-01": "劳动节假期",
+      "2025-05-02": "劳动节假期",
+      "2025-05-03": "劳动节假期",
+      "2025-05-04": "劳动节假期",
+      "2025-05-05": "劳动节假期",
+      "2025-05-31": "端午节假期",
+      "2025-06-01": "端午节假期",
+      "2025-06-02": "端午节假期",
+      "2025-09-28": "调休上班",
+      "2025-10-01": "国庆/中秋假期",
+      "2025-10-02": "国庆/中秋假期",
+      "2025-10-03": "国庆/中秋假期",
+      "2025-10-04": "国庆/中秋假期",
+      "2025-10-05": "国庆/中秋假期",
+      "2025-10-06": "国庆/中秋假期",
+      "2025-10-07": "国庆/中秋假期",
+      "2025-10-08": "国庆/中秋假期",
+      "2025-10-11": "调休上班"
+    };
+
+    // 使用 solarlunar-es 库计算农历信息
+    // 参数要求：year (数字), month (1-12), day (数字)
+    function getLunarDate(year, month, day) {
+      const lunarData = solarLunar.solar2lunar(year, month, day);
+      // 格式化返回农历信息，例如 "2025年正月初一"
+      return `${lunarData.lYear}年${lunarData.monthCn}${lunarData.dayCn}`;
+    }
+
+    // 生成指定月份的日历表格
+    function generateMonthCalendar(year, month) {
+      const firstDay = new Date(year, month, 1);
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const monthNames = ["一月", "二月", "三月", "四月", "五月", "六月",
+                          "七月", "八月", "九月", "十月", "十一月", "十二月"];
+      
+      let html = `<div class="month"><h2>${year}年 ${monthNames[month]}</h2>`;
+      html += '<table><thead><tr>';
+      const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
+      weekDays.forEach(day => { html += `<th>${day}</th>`; });
+      html += '</tr></thead><tbody><tr>';
+
+      // 填充第一行空白单元格
+      const startWeekday = firstDay.getDay();
+      for(let i = 0; i < startWeekday; i++){
+        html += '<td></td>';
+      }
+
+      // 遍历该月所有天数
+      for (let day = 1; day <= daysInMonth; day++) {
+        const currentDate = new Date(year, month, day);
+        const yyyy = currentDate.getFullYear();
+        // 注意：solarlunar-es 需要月份为1-12，所以这里加1
+        const mm = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+        const dd = day.toString().padStart(2, '0');
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+
+        // 判断是否为假日或调休上班日
+        const holidayName = holidays[dateStr];
+        let cellClass = "";
+        if (holidayName) {
+          cellClass = holidayName.indexOf("调休") !== -1 ? "workday" : "holiday";
+        }
+        
+        // 调用 solarlunar-es 获取农历信息
+        const lunarStr = getLunarDate(yyyy, currentDate.getMonth() + 1, day);
+        
+        html += `<td class="${cellClass}" ${holidayName ? 'data-holiday="'+holidayName+'"' : ''}>`;
+        html += `<div class="date-number">${day}</div>`;
+        html += `<div class="lunar">${lunarStr}</div>`;
+        html += `</td>`;
+
+        // 每到周六换行
+        if (currentDate.getDay() === 6 && day < daysInMonth) {
+          html += '</tr><tr>';
+        }
+      }
+
+      // 填充最后一行空单元格
+      const endWeekday = new Date(year, month, daysInMonth).getDay();
+      if (endWeekday < 6) {
+        for(let i = endWeekday + 1; i <= 6; i++){
+          html += '<td></td>';
+        }
+      }
+      html += '</tr></tbody></table></div>';
+      return html;
+    }
+
+    // 生成整年日历（2025年）
+    function generateYearCalendar(year) {
+      let calendarHTML = "";
+      for(let m = 0; m < 12; m++){
+        calendarHTML += generateMonthCalendar(year, m);
+      }
+      return calendarHTML;
+    }
+
+    // 将生成的日历插入到页面中
+    document.getElementById("calendar").innerHTML = generateYearCalendar(2025);
+  </script>
+</body>
+</html>
