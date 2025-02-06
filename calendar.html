@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>2025 年年历（含农历、节气和节假日）</title>
+  <title>2025 年年历（含农历、节气、法定及汉族民俗节日）</title>
   <style>
     body {
       font-family: "微软雅黑", sans-serif;
@@ -118,18 +118,36 @@
       "2025-10-11": "调休上班"
     };
 
-    // getLunarDate 函数：先调用 solarlunar.solar2lunar 计算农历信息
-    // 如果 lunarData.term 不为空（当天为节气），则返回节气名称；
-    // 否则，如果农历日为初一，则返回月份（闰月前加“润”），否则返回农历日
-    function getLunarDate(year, month, day) {
+    // 定义汉族民俗节日（非公休日），以农历日期判断（仅适用于非闰月）
+    const folkFestivals = [
+      { lunarMonth: 1, lunarDay: 7, name: "人日" },
+      { lunarMonth: 3, lunarDay: 3, name: "上巳节" },
+      { lunarMonth: 7, lunarDay: 7, name: "七夕" },
+      { lunarMonth: 7, lunarDay: 15, name: "中元节" },
+      { lunarMonth: 9, lunarDay: 9, name: "重阳节" },
+      { lunarMonth: 12, lunarDay: 8, name: "腊八节" }
+    ];
+
+    // getLunarDisplay 函数：
+    // 1. 若当天有节气（lunarData.term），返回节气名称；
+    // 2. 否则若农历日期匹配民俗节日（且非闰月），则返回对应民俗节日名称；
+    // 3. 若农历日为初一，则返回月份名称（闰月前加“润”）；
+    // 4. 否则返回农历日（如“初八”）。
+    function getLunarDisplay(year, month, day) {
       const lunarData = solarLunar.solar2lunar(year, month, day);
       if (lunarData.term) {
         return lunarData.term;
-      } else if (lunarData.lDay === 1) {
-        return (lunarData.isLeap ? "润" : "") + lunarData.monthCn;
-      } else {
-        return lunarData.dayCn;
       }
+      // 检查是否符合民俗节日（仅针对非闰月）
+      for (let fest of folkFestivals) {
+        if (lunarData.lMonth === fest.lunarMonth && lunarData.lDay === fest.lunarDay && !lunarData.isLeap) {
+          return fest.name;
+        }
+      }
+      if (lunarData.lDay === 1) {
+        return (lunarData.isLeap ? "润" : "") + lunarData.monthCn;
+      }
+      return lunarData.dayCn;
     }
 
     // 生成指定月份的日历表格
@@ -139,7 +157,7 @@
       const monthNames = ["一月", "二月", "三月", "四月", "五月", "六月",
                           "七月", "八月", "九月", "十月", "十一月", "十二月"];
       
-      // 取消原来的标题，改为在背景中显示水印
+      // 使用水印显示月份名称，取消原有标题
       let html = `<div class="month" data-watermark="${monthNames[month]}">`;
       html += `<div class="watermark">${monthNames[month]}</div>`;
       html += '<table><thead><tr>';
@@ -157,24 +175,24 @@
       for (let day = 1; day <= daysInMonth; day++) {
         const currentDate = new Date(year, month, day);
         const yyyy = currentDate.getFullYear();
-        // solarlunar-es 需要月份为 1-12
+        // 注意：solarlunar-es 需要月份为 1-12
         const mm = (currentDate.getMonth() + 1).toString().padStart(2, '0');
         const dd = day.toString().padStart(2, '0');
         const dateStr = `${yyyy}-${mm}-${dd}`;
 
-        // 判断是否为假日或调休上班日
+        // 判断是否为法定假日或调休上班日
         const holidayName = holidays[dateStr];
         let cellClass = "";
         if (holidayName) {
           cellClass = holidayName.indexOf("调休") !== -1 ? "workday" : "holiday";
         }
         
-        // 获取农历或节气信息
-        const lunarStr = getLunarDate(yyyy, currentDate.getMonth() + 1, day);
+        // 获取农历、节气或民俗节日显示信息
+        const lunarDisplay = getLunarDisplay(yyyy, currentDate.getMonth() + 1, day);
         
         html += `<td class="${cellClass}" ${holidayName ? 'data-holiday="'+holidayName+'"' : ''}>`;
         html += `<div class="date-number">${day}</div>`;
-        html += `<div class="lunar">${lunarStr}</div>`;
+        html += `<div class="lunar">${lunarDisplay}</div>`;
         html += `</td>`;
 
         // 如果当前为周六且非当月最后一天，则换行
