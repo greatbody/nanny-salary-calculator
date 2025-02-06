@@ -61,6 +61,19 @@
       font-weight: bold;
       margin-bottom: 4px;
       text-align: left;
+      position: relative;
+    }
+    .rest-indicator {
+      color: #0066cc;
+      font-weight: normal;
+      margin-left: 2px;
+      font-size: 0.7em;
+    }
+    .work-indicator {
+      color: #cc0000;
+      font-weight: normal;
+      margin-left: 2px;
+      font-size: 0.7em;
     }
     .lunar {
       font-size: 0.8em;
@@ -69,14 +82,6 @@
     }
     .holiday {
       background: #ffe0e0;
-    }
-    .holiday::after {
-      content: attr(data-holiday);
-      display: block;
-      font-size: 0.75em;
-      color: #d00;
-      margin-top: 4px;
-      text-align: left;
     }
     .workday {
       background: #e0f7ff;
@@ -141,8 +146,8 @@
     // getLunarDisplay 函数：
     // 1. 若当天有节气（lunarData.term），返回节气名称；
     // 2. 否则若农历日期匹配民俗节日（且非闰月），则返回对应民俗节日名称；
-    // 3. 若农历日为初一，则返回月份名称（闰月前加“润”）；
-    // 4. 否则返回农历日（如“初八”）。
+    // 3. 若农历日为初一，则返回月份名称（闰月前加"润"）；
+    // 4. 否则返回农历日（如"初八"）。
     function getLunarDisplay(year, month, day) {
       const lunarData = solarLunar.solar2lunar(year, month, day);
       if (lunarData.term) {
@@ -201,7 +206,14 @@
         const lunarDisplay = getLunarDisplay(yyyy, currentDate.getMonth() + 1, day);
         
         html += `<td class="${cellClass}" ${holidayName ? 'data-holiday="'+holidayName+'"' : ''}>`;
-        html += `<div class="date-number">${day}</div>`;
+        html += `<div class="date-number">${day}`;
+        // Add rest indicator if it's a holiday and not a workday
+        if (holidayName && holidayName.includes("调休")) {
+          html += `<sup class="work-indicator">班</sup>`;
+        } else if (holidayName) {
+          html += `<sup class="rest-indicator">休</sup>`;
+        }
+        html += `</div>`;
         html += `<div class="lunar">${lunarDisplay}</div>`;
         html += `</td>`;
 
