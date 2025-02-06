@@ -325,6 +325,10 @@
           dayElement.textContent = day;
           dayElement.dataset.day = day;
           dayElement.addEventListener('click', toggleDay);
+          dayElement.addEventListener('touchstart', function(e) {
+            e.preventDefault(); // Prevent default touch behavior
+            toggleDay(e);
+          });
           calendarDays.appendChild(dayElement);
 
           if (isSunday) {
