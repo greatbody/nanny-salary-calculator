@@ -43,7 +43,7 @@
       border: 1px solid #ddd;
       text-align: center;
       vertical-align: top;
-      padding: 5px;
+      padding: 10px;
       height: 80px;
       position: relative;
     }
@@ -53,10 +53,12 @@
     .date-number {
       font-weight: bold;
       margin-bottom: 4px;
+      text-align: left;
     }
     .lunar {
       font-size: 0.8em;
       color: #666;
+      text-align: left;
     }
     .holiday {
       background: #ffe0e0;
@@ -67,6 +69,7 @@
       font-size: 0.75em;
       color: #d00;
       margin-top: 4px;
+      text-align: left;
     }
     .workday {
       background: #e0f7ff;
@@ -182,7 +185,7 @@
 
         // 判断是否为法定假日或调休上班日
         const holidayName = holidays[dateStr];
-        let cellClass = "";
+        let cellClass = "normal";
         if (holidayName) {
           cellClass = holidayName.indexOf("调休") !== -1 ? "workday" : "holiday";
         }
