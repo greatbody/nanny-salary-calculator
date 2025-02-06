@@ -212,87 +212,10 @@
   </div>
 
   <script>
-    // 获取各个 DOM 元素
-    const scenarioRadios = document.getElementsByName("scenario");
-    const normalInputs = document.getElementById("normalInputs");
-    const februaryInputs = document.getElementById("februaryInputs");
-    const specialInputs = document.getElementById("specialInputs");
-    const extraLeaveInput = document.getElementById("extraLeave");
-    const normalWorkDaysDiv = document.getElementById("normalWorkDays");
-    const normalDaysInput = document.getElementById("normalDays");
-    const febDaysInput = document.getElementById("febDays");
-    const specialDaysInput = document.getElementById("specialDays");
-    const calcBtn = document.getElementById("calcBtn");
-    const resultDiv = document.getElementById("result");
-
-    // 根据选择的情形显示对应的输入区域
-    function updateScenarioInputs() {
-      let scenario = document.getElementById('scenarioSelect').value;
-      normalInputs.style.display = (scenario === "normal") ? "block" : "none";
-      februaryInputs.style.display = (scenario === "february") ? "block" : "none";
-      specialInputs.style.display = (scenario === "special") ? "block" : "none";
-      resultDiv.textContent = "";
-      if (scenario === 'normal') {
-        generateCalendar();
-        updateWorkDays();
-      }
-    }
-
-    scenarioRadios.forEach(radio => {
-      radio.addEventListener("change", updateScenarioInputs);
-    });
-
-    // 当在普通工作月份中输入额外休假天数时，如果超过5天，显示实际工作天数输入框
-    extraLeaveInput.addEventListener("input", function () {
-      let extra = parseFloat(extraLeaveInput.value) || 0;
-      if (extra > 5) {
-        normalWorkDaysDiv.style.display = "block";
-      } else {
-        normalWorkDaysDiv.style.display = "none";
-      }
-    });
-
+    // Utility functions and constants
     const deductionDailyWage = 190; // 不超过 5 天额外休假时，每休假日扣除工资单价。
     const regularDailyWage = 195; // 超过 5 天额外休假时，每个实际工作日结算工资单价。
 
-    function calculateWage() {
-      let scenario = document.getElementById('scenarioSelect').value;
-      let wage = 0;
-      let details = '';
-
-      if (scenario === "normal") {
-        let extraLeave = parseFloat(extraLeaveInput.value) || 0;
-        if (extraLeave <= 5) {
-          // 扣除法：工资 = 5000 - 额外休假天数 * 190
-          wage = 5000 - extraLeave * deductionDailyWage;
-          if (extraLeave > 0) {
-            details = `（扣减 ${extraLeave} 天工资，每天按 ${deductionDailyWage} 元扣减，共 ${(extraLeave * deductionDailyWage).toFixed(2)} 元）`;
-          }
-        } else {
-          // 多于5天，请输入实际住家工作天数，并采用乘法：工资 = 实际工作天数 * 195
-          let workDays = parseFloat(normalDaysInput.value) || 0;
-          wage = workDays * regularDailyWage;
-          details = `（休假超过 5 天，工资按实际工作天数计算，每天 ${regularDailyWage} 元，共工作 ${workDays} 天，累计工资 ${wage.toFixed(2)} 元）`;
-        }
-      } else if (scenario === "february") {
-        // 二月首月：工资 = 实际工作天数 * 200
-        let days = parseFloat(febDaysInput.value) || 0;
-        wage = days * 200;
-        details = `（首月工作 ${days} 天，每天 200 元）`;
-      } else if (scenario === "special") {
-        // 特殊放假月份（如春季、暑期）：按实际天数结算
-        let days = parseFloat(specialDaysInput.value) || 0;
-        wage = days * (5000 / 26);
-        details = `（特殊月份工作 ${days} 天，每天 ${(5000 / 26).toFixed(2)} 元）`;
-      }
-
-      resultDiv.textContent = `本月工资：￥${wage.toFixed(2)} ${details}`;
-    }
-
-    // 计算工资按钮点击事件
-    calcBtn.addEventListener("click", calculateWage);
-
-    // 处理数字输入框的键盘事件
     function handleNumberInputKeydown(event, input) {
       if (event.key === 'ArrowUp') {
         input.value = Math.max(0, Math.floor(Number(input.value) + 1));
@@ -305,11 +228,57 @@
       }
     }
 
-    // 初始显示
-    updateScenarioInputs();
-  </script>
-  <script>
-    // Calendar functionality
+    function toggleDay(event) {
+      const dayElement = event.target;
+      dayElement.classList.toggle('selected');
+      updateWorkDays();
+    }
+
+    // DOM element references
+    const scenarioRadios = document.getElementsByName("scenario");
+    const normalInputs = document.getElementById("normalInputs");
+    const februaryInputs = document.getElementById("februaryInputs");
+    const specialInputs = document.getElementById("specialInputs");
+    const extraLeaveInput = document.getElementById("extraLeave");
+    const normalWorkDaysDiv = document.getElementById("normalWorkDays");
+    const normalDaysInput = document.getElementById("normalDays");
+    const febDaysInput = document.getElementById("febDays");
+    const specialDaysInput = document.getElementById("specialDays");
+    const calcBtn = document.getElementById("calcBtn");
+    const resultDiv = document.getElementById("result");
+
+    // Core calculation function
+    function calculateWage() {
+      let scenario = document.getElementById('scenarioSelect').value;
+      let wage = 0;
+      let details = '';
+
+      if (scenario === "normal") {
+        let extraLeave = parseFloat(extraLeaveInput.value) || 0;
+        if (extraLeave <= 5) {
+          wage = 5000 - extraLeave * deductionDailyWage;
+          if (extraLeave > 0) {
+            details = `（扣减 ${extraLeave} 天工资，每天按 ${deductionDailyWage} 元扣减，共 ${(extraLeave * deductionDailyWage).toFixed(2)} 元）`;
+          }
+        } else {
+          let workDays = parseFloat(normalDaysInput.value) || 0;
+          wage = workDays * regularDailyWage;
+          details = `（休假超过 5 天，工资按实际工作天数计算，每天 ${regularDailyWage} 元，共工作 ${workDays} 天，累计工资 ${wage.toFixed(2)} 元）`;
+        }
+      } else if (scenario === "february") {
+        let days = parseFloat(febDaysInput.value) || 0;
+        wage = days * 200;
+        details = `（首月工作 ${days} 天，每天 200 元）`;
+      } else if (scenario === "special") {
+        let days = parseFloat(specialDaysInput.value) || 0;
+        wage = days * (5000 / 26);
+        details = `（特殊月份工作 ${days} 天，每天 ${(5000 / 26).toFixed(2)} 元）`;
+      }
+
+      resultDiv.textContent = `本月工资：￥${wage.toFixed(2)} ${details}`;
+    }
+
+    // Calendar and scenario management functions
     function generateCalendar() {
       const calendarDays = document.getElementById('calendarDays');
       const yearSelect = document.getElementById('yearSelect');
@@ -321,26 +290,20 @@
       const startDay = firstDay.getDay();
       const totalDays = lastDay.getDate();
 
-      // Clear previous calendar
       calendarDays.innerHTML = '';
 
-      // Add empty cells for days before the first day of the month
       for (let i = 0; i < startDay; i++) {
         const emptyDay = document.createElement('div');
         emptyDay.className = 'calendar-day disabled';
         calendarDays.appendChild(emptyDay);
       }
 
-      // Track Sundays for auto-unselecting first 4
       let sundayCount = 0;
 
-      // Add days of the month
       for (let day = 1; day <= totalDays; day++) {
         const dayElement = document.createElement('div');
         const currentDate = new Date(year, month, day);
         const isSunday = currentDate.getDay() === 0;
-
-        // Default to selected, unless it's one of the first 4 Sundays
         const shouldBeSelected = !(isSunday && sundayCount < 4);
 
         dayElement.className = 'calendar-day' + (shouldBeSelected ? ' selected' : '');
@@ -348,7 +311,7 @@
         dayElement.dataset.day = day;
         dayElement.addEventListener('click', toggleDay);
         dayElement.addEventListener('touchstart', function (e) {
-          e.preventDefault(); // Prevent default touch behavior
+          e.preventDefault();
           toggleDay(e);
         });
         calendarDays.appendChild(dayElement);
@@ -359,12 +322,6 @@
       }
     }
 
-    function toggleDay(event) {
-      const dayElement = event.target;
-      dayElement.classList.toggle('selected');
-      updateWorkDays();
-    }
-
     function updateWorkDays() {
       const selectedDays = document.querySelectorAll('.calendar-day.selected').length;
       const scenario = document.getElementById('scenarioSelect').value;
@@ -373,7 +330,7 @@
         const year = parseInt(document.getElementById('yearSelect').value);
         const month = parseInt(document.getElementById('monthSelect').value);
         const totalDays = new Date(year, month + 1, 0).getDate();
-        const expectedWorkDays = totalDays - 4; // Subtract 4 rest days
+        const expectedWorkDays = totalDays - 4;
         const workDays = selectedDays;
         const extraLeave = Math.max(0, expectedWorkDays - workDays);
         extraLeaveInput.value = extraLeave;
@@ -389,25 +346,30 @@
         specialDaysInput.value = selectedDays;
       }
 
-      // Trigger wage calculation
       calculateWage();
     }
 
-    // Initialize
-    updateScenarioInputs();
+    function updateScenarioInputs() {
+      let scenario = document.getElementById('scenarioSelect').value;
+      normalInputs.style.display = (scenario === "normal") ? "block" : "none";
+      februaryInputs.style.display = (scenario === "february") ? "block" : "none";
+      specialInputs.style.display = (scenario === "special") ? "block" : "none";
+      resultDiv.textContent = "";
+      if (scenario === 'normal') {
+        generateCalendar();
+        updateWorkDays();
+      }
+    }
 
-    // Populate year and month dropdowns
     function populateYearMonthDropdowns() {
       const yearSelect = document.getElementById('yearSelect');
       const monthSelect = document.getElementById('monthSelect');
       const today = new Date();
       const currentYear = today.getFullYear();
 
-      // Clear existing options
       yearSelect.innerHTML = '';
       monthSelect.innerHTML = '';
 
-      // Add year options (last year, current year, next year)
       for (let year = currentYear - 1; year <= currentYear + 1; year++) {
         const option = document.createElement('option');
         option.value = year;
@@ -416,7 +378,6 @@
         yearSelect.appendChild(option);
       }
 
-      // Add month options
       for (let month = 0; month < 12; month++) {
         const option = document.createElement('option');
         option.value = month;
@@ -426,22 +387,29 @@
       }
     }
 
-    // Update calendar when year or month changes
+    // Event listeners
+    calcBtn.addEventListener("click", calculateWage);
+    extraLeaveInput.addEventListener("input", function () {
+      let extra = parseFloat(extraLeaveInput.value) || 0;
+      if (extra > 5) {
+        normalWorkDaysDiv.style.display = "block";
+      } else {
+        normalWorkDaysDiv.style.display = "none";
+      }
+    });
+
     document.getElementById('yearSelect').addEventListener('change', generateCalendar);
     document.getElementById('monthSelect').addEventListener('change', generateCalendar);
 
-    // Initialize calendar and dropdowns
+    scenarioRadios.forEach(radio => {
+      radio.addEventListener("change", updateScenarioInputs);
+    });
+
+    // Initialization
     populateYearMonthDropdowns();
     generateCalendar();
-    calculateWage(); // Initial calculation
-
-    // Update calendar when scenario changes
-    scenarioRadios.forEach(radio => {
-      radio.addEventListener('change', () => {
-        generateCalendar();
-        updateWorkDays();
-      });
-    });
+    updateScenarioInputs();
+    calculateWage();
   </script>
 </body>
 
