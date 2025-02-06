@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>阿姨本月工资计算器</title>
+  <style>
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      padding: 20px;
+      margin: 0;
+      background: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      max-width: 500px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    h1 {
+      text-align: center;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+    }
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      margin-top: 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .scenario-group {
+      margin-top: 15px;
+    }
+    .scenario-group label {
+      display: inline-block;
+      margin-right: 10px;
+      font-weight: normal;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      margin-top: 20px;
+      font-size: 16px;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .calendar {
+      margin-top: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+    }
+    .calendar-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .calendar-controls select {
+      width: auto;
+      padding: 4px 8px;
+      margin: 0 5px;
+    }
+    .calendar-header {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .calendar-days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+    .calendar-day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: 1px solid #ddd;
+      position: relative;
+      background: #fff;
+    }
+    .calendar-day.selected {
+      background: #007bff;
+      color: white;
+    }
+    .calendar-day.disabled {
+      background: #f5f5f5;
+      cursor: not-allowed;
+      color: #999;
+    }
+    .gray-readonly {
+      background-color: #f5f5f5;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>阿姨工资计算器</h1>
+    
+    <div class="scenario-group">
+      <label>请选择计算情形：</label>
+      <label>
+        <input type="radio" name="scenario" value="normal" checked> 普通工作月份
+      </label>
+      <label>
+        <input type="radio" name="scenario" value="february"> 二月首月（首年）
+      </label>
+      <label>
+        <input type="radio" name="scenario" value="special"> 特殊放假月份（春季/暑期）
+      </label>
+    </div>
+    
+    <!-- 普通工作月份输入 -->
+    <div id="normalInputs">
+      <div class="calendar">
+        <div class="calendar-controls">
+          <select id="yearSelect"></select>
+          <select id="monthSelect"></select>
+        </div>
+        <div class="calendar-header">
+          <div>日</div>
+          <div>一</div>
+          <div>二</div>
+          <div>三</div>
+          <div>四</div>
+          <div>五</div>
+          <div>六</div>
+        </div>
+        <div class="calendar-days" id="calendarDays"></div>
+      </div>
+      <label for="extraLeave">额外休假天数（不含正常休息的4天）：</label>
+      <input type="number" class="gray-readonly" id="extraLeave" min="0" value="0" readonly onchange="this.value = Math.max(0, Math.floor(Number(this.value)) || 0); calculateWage();">
+      
+      <!-- 当额外休假超过5天时需要输入实际工作天数 -->
+      <div id="normalWorkDays" style="display:none;">
+        <label for="normalDays">实际住家工作天数：</label>
+        <input type="number" class="gray-readonly" id="normalDays" min="0" step="1" value="0" readonly onchange="this.value = Math.max(0, Math.floor(Number(this.value)) || 0); calculateWage();">
+      </div>
+    </div>
+    
+    <!-- 二月首月输入 -->
+    <div id="februaryInputs" style="display:none;">
+      <label for="febDays">实际工作天数：</label>
+      <input type="number" id="febDays" min="0" step="1" value="0" 
+        oninput="calculateWage();"
+        onkeydown="handleNumberInputKeydown(event, this)"
+      >
+    </div>
+    
+    <!-- 特殊放假月份输入 -->
+    <div id="specialInputs" style="display:none;">
+      <label for="specialDays">实际工作天数（按实际天数结算）：</label>
+      <input type="number" id="specialDays" min="0" step="1" value="0" onchange="this.value = Math.max(0, Math.floor(Number(this.value)) || 0); calculateWage();" onkeydown="handleNumberInputKeydown(event, this)">
+    </div>
+    
+    <button id="calcBtn">计算工资</button>
+    
+    <div id="result"></div>
+  </div>
+  
+  <script>
+    // 获取各个 DOM 元素
+    const scenarioRadios = document.getElementsByName("scenario");
+    const normalInputs = document.getElementById("normalInputs");
+    const februaryInputs = document.getElementById("februaryInputs");
+    const specialInputs = document.getElementById("specialInputs");
+    const extraLeaveInput = document.getElementById("extraLeave");
+    const normalWorkDaysDiv = document.getElementById("normalWorkDays");
+    const normalDaysInput = document.getElementById("normalDays");
+    const febDaysInput = document.getElementById("febDays");
+    const specialDaysInput = document.getElementById("specialDays");
+    const calcBtn = document.getElementById("calcBtn");
+    const resultDiv = document.getElementById("result");
+
+    // 根据选择的情形显示对应的输入区域
+    function updateScenarioInputs() {
+      let scenario = document.querySelector('input[name="scenario"]:checked').value;
+      normalInputs.style.display = (scenario === "normal") ? "block" : "none";
+      februaryInputs.style.display = (scenario === "february") ? "block" : "none";
+      specialInputs.style.display = (scenario === "special") ? "block" : "none";
+      resultDiv.textContent = "";
+    }
+
+    scenarioRadios.forEach(radio => {
+      radio.addEventListener("change", updateScenarioInputs);
+    });
+    
+    // 当在普通工作月份中输入额外休假天数时，如果超过5天，显示实际工作天数输入框
+    extraLeaveInput.addEventListener("input", function() {
+      let extra = parseFloat(extraLeaveInput.value) || 0;
+      if (extra > 5) {
+        normalWorkDaysDiv.style.display = "block";
+      } else {
+        normalWorkDaysDiv.style.display = "none";
+      }
+    });
+
+    const deductionDailyWage = 190; // 不超过 5 天额外休假时，每休假日扣除工资单价。
+    const regularDailyWage = 195; // 超过 5 天额外休假时，每个实际工作日结算工资单价。
+    
+    function calculateWage() {
+      let scenario = document.querySelector('input[name="scenario"]:checked').value;
+      let wage = 0;
+      let details = '';
+      
+      if (scenario === "normal") {
+        let extraLeave = parseFloat(extraLeaveInput.value) || 0;
+        if (extraLeave <= 5) {
+          // 扣除法：工资 = 5000 - 额外休假天数 * 190
+          wage = 5000 - extraLeave * deductionDailyWage;
+          if (extraLeave > 0) {
+            details = `（扣减 ${extraLeave} 天工资，每天按 ${deductionDailyWage} 元扣减，共 ${(extraLeave * deductionDailyWage).toFixed(2)} 元）`;
+          }
+        } else {
+          // 多于5天，请输入实际住家工作天数，并采用乘法：工资 = 实际工作天数 * 195
+          let workDays = parseFloat(normalDaysInput.value) || 0;
+          wage = workDays * regularDailyWage;
+          details = `（休假超过 5 天，工资按实际工作天数计算，每天 ${regularDailyWage} 元，共工作 ${workDays} 天，累计工资 ${wage.toFixed(2)} 元）`;
+        }
+      } else if (scenario === "february") {
+        // 二月首月：工资 = 实际工作天数 * 200
+        let days = parseFloat(febDaysInput.value) || 0;
+        wage = days * 200;
+        details = `（首月工作 ${days} 天，每天 200 元）`;
+      } else if (scenario === "special") {
+        // 特殊放假月份（如春季、暑期）：按实际天数结算
+        let days = parseFloat(specialDaysInput.value) || 0;
+        wage = days * (5000/26);
+        details = `（特殊月份工作 ${days} 天，每天 ${(5000/26).toFixed(2)} 元）`;
+      }
+      
+      resultDiv.textContent = `本月工资：￥${wage.toFixed(2)} ${details}`;
+    }
+
+    // 计算工资按钮点击事件
+    calcBtn.addEventListener("click", calculateWage);
+    
+    // 处理数字输入框的键盘事件
+    function handleNumberInputKeydown(event, input) {
+      if (event.key === 'ArrowUp') {
+        input.value = Math.max(0, Math.floor(Number(input.value) + 1));
+        calculateWage();
+        event.preventDefault();
+      } else if (event.key === 'ArrowDown') {
+        input.value = Math.max(0, Math.floor(Number(input.value) - 1));
+        calculateWage();
+        event.preventDefault();
+      }
+    }
+
+    // 初始显示
+    updateScenarioInputs();
+  </script>
+    <script>
+      // Calendar functionality
+      function generateCalendar() {
+        const calendarDays = document.getElementById('calendarDays');
+        const yearSelect = document.getElementById('yearSelect');
+        const monthSelect = document.getElementById('monthSelect');
+        const year = parseInt(yearSelect.value);
+        const month = parseInt(monthSelect.value);
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const startDay = firstDay.getDay();
+        const totalDays = lastDay.getDate();
+
+        // Clear previous calendar
+        calendarDays.innerHTML = '';
+
+        // Add empty cells for days before the first day of the month
+        for (let i = 0; i < startDay; i++) {
+          const emptyDay = document.createElement('div');
+          emptyDay.className = 'calendar-day disabled';
+          calendarDays.appendChild(emptyDay);
+        }
+
+        // Track Sundays for auto-unselecting first 4
+        let sundayCount = 0;
+
+        // Add days of the month
+        for (let day = 1; day <= totalDays; day++) {
+          const dayElement = document.createElement('div');
+          const currentDate = new Date(year, month, day);
+          const isSunday = currentDate.getDay() === 0;
+          
+          // Default to selected, unless it's one of the first 4 Sundays
+          const shouldBeSelected = !(isSunday && sundayCount < 4);
+          
+          dayElement.className = 'calendar-day' + (shouldBeSelected ? ' selected' : '');
+          dayElement.textContent = day;
+          dayElement.dataset.day = day;
+          dayElement.addEventListener('click', toggleDay);
+          calendarDays.appendChild(dayElement);
+
+          if (isSunday) {
+            sundayCount++;
+          }
+        }
+      }
+
+      function toggleDay(event) {
+        const dayElement = event.target;
+        dayElement.classList.toggle('selected');
+        updateWorkDays();
+      }
+
+      function updateWorkDays() {
+        const selectedDays = document.querySelectorAll('.calendar-day.selected').length;
+        const scenario = document.querySelector('input[name="scenario"]:checked').value;
+        
+        if (scenario === 'normal') {
+          const year = parseInt(document.getElementById('yearSelect').value);
+          const month = parseInt(document.getElementById('monthSelect').value);
+          const totalDays = new Date(year, month + 1, 0).getDate();
+          const expectedWorkDays = totalDays - 4; // Subtract 4 rest days
+          const workDays = selectedDays;
+          const extraLeave = Math.max(0, expectedWorkDays - workDays);
+          extraLeaveInput.value = extraLeave;
+          if (extraLeave > 5) {
+            normalWorkDaysDiv.style.display = 'block';
+            normalDaysInput.value = workDays;
+          } else {
+            normalWorkDaysDiv.style.display = 'none';
+          }
+        } else if (scenario === 'february') {
+          febDaysInput.value = selectedDays;
+        } else if (scenario === 'special') {
+          specialDaysInput.value = selectedDays;
+        }
+        
+        // Trigger wage calculation
+        calculateWage();
+        
+        // Trigger wage calculation
+        calcBtn.click();
+      }
+
+      // Populate year and month dropdowns
+      function populateYearMonthDropdowns() {
+        const yearSelect = document.getElementById('yearSelect');
+        const monthSelect = document.getElementById('monthSelect');
+        const today = new Date();
+        const currentYear = today.getFullYear();
+
+        // Clear existing options
+        yearSelect.innerHTML = '';
+        monthSelect.innerHTML = '';
+
+        // Add year options (last year, current year, next year)
+        for (let year = currentYear - 1; year <= currentYear + 1; year++) {
+          const option = document.createElement('option');
+          option.value = year;
+          option.textContent = year + '年';
+          if (year === currentYear) option.selected = true;
+          yearSelect.appendChild(option);
+        }
+
+        // Add month options
+        for (let month = 0; month < 12; month++) {
+          const option = document.createElement('option');
+          option.value = month;
+          option.textContent = (month + 1) + '月';
+          if (month === today.getMonth()) option.selected = true;
+          monthSelect.appendChild(option);
+        }
+      }
+
+      // Update calendar when year or month changes
+      document.getElementById('yearSelect').addEventListener('change', generateCalendar);
+      document.getElementById('monthSelect').addEventListener('change', generateCalendar);
+
+      // Initialize calendar and dropdowns
+      populateYearMonthDropdowns();
+      generateCalendar();
+      calculateWage(); // Initial calculation
+
+      // Update calendar when scenario changes
+      scenarioRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+          generateCalendar();
+          updateWorkDays();
+        });
+      });
+    </script>
+  </body>
+</html>
